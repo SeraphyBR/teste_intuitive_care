@@ -1,13 +1,13 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
-    "allowJs": false,
+    "allowJs": true,
     "baseUrl": "./",
     "declaration": true,
     "esModuleInterop": true,
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "noImplicitThis": true,
     "outDir": "./dist",
     "strict": true,

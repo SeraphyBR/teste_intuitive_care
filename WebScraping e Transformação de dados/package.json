@@ -13,12 +13,18 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^15.0.2",
+    "@types/utf8": "^2.1.6",
+    "mocha": "^8.3.2",
     "ts-node": "^9.1.1",
     "typescript": "^4.2.4"
   },
   "dependencies": {
     "axios": "^0.21.1",
     "cheerio": "^1.0.0-rc.6",
-    "puppeteer": "^9.1.1"
+    "js-file-download": "^0.4.12",
+    "pdf2json": "^1.2.1",
+    "pdfreader": "^1.2.8",
+    "puppeteer": "^9.1.1",
+    "utf8": "^3.0.0"
   }
 }
