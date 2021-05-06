@@ -75,10 +75,19 @@ function get_data_from_pdf(file_path: string) {
         let quadro31_idx = pdf_content.findIndex(e => e.startsWith("Quadro 31"));
         let quadro32_idx = pdf_content.findIndex(e => e.startsWith("Quadro 32"));
 
-        console.log(quadro32_idx)
-        for (let index = quadro32_idx; index < index + 20; index++) {
-            if (pdf_content[index])
-            console.log(pdf_content[index]);
+        // O titulo "Quadro 32" é mais distante da tabela em si, do que os demais, por isso
+        // devemos encontrar o verdadeiro index de onde começa a tabela.
+        // Não pesquisei direto como nos códigos acima, pois, alem de ser um caso isolado de formatação,
+        // o titulo da tabela em pdf_content se encontra quebrado com um '\n', e sua primeira parte pode
+        // condizer com o começo do titulo dos outros quadros, nesse caso com o quadro 30. "Tabela de Tipo..."
+        let not_in_quadro32 = true;
+        while(not_in_quadro32 && quadro32_idx < pdf_content.length){
+            let condition = pdf_content[quadro32_idx]?.toLowerCase().includes("tabela de tipo")
+                            && pdf_content[quadro32_idx + 1]?.toLowerCase().includes("solicitação");
+            if(condition){
+                not_in_quadro32 = false;
+            }
+            quadro32_idx += 1;
         }
 
         quadro30_idx += 3;
@@ -89,11 +98,11 @@ function get_data_from_pdf(file_path: string) {
         quadro_csv[1] += `${pdf_content[quadro31_idx]},${pdf_content[quadro31_idx + 1]}`;
         quadro31_idx += 2;
 
-        quadro32_idx += 2;
+        quadro32_idx += 1;
         quadro_csv[2] += `${pdf_content[quadro32_idx]},${pdf_content[quadro32_idx + 1]}`;
         quadro32_idx += 2;
 
-        let lista_idxs = [quadro30_idx];
+        let lista_idxs = [quadro30_idx, quadro31_idx, quadro32_idx];
 
         lista_idxs.forEach((quadro_idx, quadro) => {
             let not_have_exit = true;
@@ -110,13 +119,18 @@ function get_data_from_pdf(file_path: string) {
                 else {
                     // Isso significa que um texto foi cortado no meio, e pertence ao anterior
                     if(isNaN(Number(pdf_content[idx].trim()))) {
+                        if(pdf_content[idx]?.toLowerCase().includes("solicitar alteração do padrão tiss")) {
+                            not_have_exit = false;
+                            continue;
+                        }
                         quadro_csv[quadro] += ` ${pdf_content[idx].trim()}`;
                         idx -= 1;
                     } else quadro_csv[quadro] += `\n${pdf_content[idx].trim()},${pdf_content[idx + 1].trim()}`;
-                    //console.log(quadro_csv[quadro]);
                 };
+                //console.log(`\n${pdf_content[idx].trim()},${pdf_content[idx + 1].trim()}`);
             }
         });
+        console.log(quadro_csv);
 
     }
 
