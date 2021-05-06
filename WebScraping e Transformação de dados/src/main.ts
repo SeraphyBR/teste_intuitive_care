@@ -4,6 +4,7 @@ import Path from "path";
 import pdf2json from "pdf2json";
 import admzip from "adm-zip";
 import pr from "pdfreader";
+import downloader from "nodejs-file-downloader";
 import fs from "fs";
 import {download_file} from "./utils";
 import { callbackify } from "util";
@@ -19,11 +20,21 @@ async function main() {
     path = await get_path_pdf_file(base_url + path);
 
     console.log(base_url + path);
-    const file_path = Path.resolve(__dirname, "..", "static", "padrao_tiss_componente_organizacional.pdf");
-    console.log(file_path);
-    //await download_file(base_url + path, file_path).catch(console.error);
 
-    get_data_from_pdf(file_path);
+    const down = new downloader({
+        url: base_url + path,
+        directory: Path.resolve(__dirname, "..", "static"),
+        filename: "padrao_tiss_componente_organizacional.pdf",
+        cloneFiles: false
+    });
+
+    try {
+      await down.download();
+    } catch (error) {
+       console.log(error)
+    }
+
+    get_data_from_pdf(Path.resolve(__dirname, "..", "static", "padrao_tiss_componente_organizacional.pdf"));
 
 }
 
