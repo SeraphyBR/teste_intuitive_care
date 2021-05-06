@@ -2,6 +2,7 @@ import axios from "axios";
 import cheerio, { Cheerio } from "cheerio";
 import Path from "path";
 import pdf2json from "pdf2json";
+import admzip from "adm-zip";
 import pr from "pdfreader";
 import fs from "fs";
 import {download_file} from "./utils";
@@ -132,6 +133,14 @@ function get_data_from_pdf(file_path: string) {
         });
         console.log(quadro_csv);
 
+	    let zip = new admzip();
+        quadro_csv.forEach((quadro, i) => {
+            const file_path = Path.resolve(__dirname, "..", "static", `quadro_3${i}.csv`);
+            fs.writeFileSync(file_path, quadro);
+            zip.addLocalFile(file_path);
+        })
+
+        zip.writeZip(Path.resolve(__dirname, "..", "static", "quadros.zip"));
     }
 
     new pr.PdfReader().parseFileItems(file_path, (err, item) => {
