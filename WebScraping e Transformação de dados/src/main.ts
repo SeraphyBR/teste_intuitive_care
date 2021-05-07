@@ -1,13 +1,10 @@
-import axios from "axios";
-import cheerio, { Cheerio } from "cheerio";
 import Path from "path";
-import pdf2json from "pdf2json";
 import admzip from "adm-zip";
-import pr from "pdfreader";
+import axios from "axios";
+import cheerio from "cheerio";
 import downloader from "nodejs-file-downloader";
 import fs from "fs";
-import {download_file} from "./utils";
-import { callbackify } from "util";
+import pr from "pdfreader";
 
 async function main() {
     const base_url = "http://www.ans.gov.br";
@@ -80,7 +77,14 @@ async function get_path_pdf_file(url: string): Promise<string> {
 function get_data_from_pdf(file_path: string) {
     let pdf_content: string[] = [];
 
-    function done_parse() {
+    new pr.PdfReader().parseFileItems(file_path, (err, item) => {
+        if (err) console.error(err);
+        else if (!item) extract_data_from_pdf(pdf_content);
+        else if (item.text) pdf_content.push(item.text);
+    });
+}
+
+function extract_data_from_pdf(pdf_content: string[]) {
         let quadro_csv = ["", "", ""];
 
         let quadro30_idx = pdf_content.findIndex(e => e.startsWith("Quadro 30"));
@@ -144,21 +148,14 @@ function get_data_from_pdf(file_path: string) {
         });
         console.log(quadro_csv);
 
-	    let zip = new admzip();
+        let zip = new admzip();
         quadro_csv.forEach((quadro, i) => {
             const file_path = Path.resolve(__dirname, "..", "static", `quadro_3${i}.csv`);
             fs.writeFileSync(file_path, quadro);
             zip.addLocalFile(file_path);
         })
 
-        zip.writeZip(Path.resolve(__dirname, "..", "static", "quadros.zip"));
-    }
-
-    new pr.PdfReader().parseFileItems(file_path, (err, item) => {
-        if (err) console.error(err);
-        else if (!item) done_parse();
-        else if (item.text) pdf_content.push(item.text);
-    });
+        zip.writeZip(Path.resolve(__dirname, "..", "static", "Teste_Intuitive_Care_Luiz_Junio_Veloso_Dos_Santos.zip"));
 }
 
 main();
