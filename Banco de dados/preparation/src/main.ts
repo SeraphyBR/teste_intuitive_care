@@ -5,9 +5,11 @@ import fs from "fs";
 import chardet from "chardet";
 import iconv from "iconv-lite";
 import {Client as ClientPG} from "pg";
+import os from "os";
 import dotenv from "dotenv";
 
 const download_dir = Path.resolve(__dirname, "..", "..", "csvs");
+const temp_dir = Path.resolve(os.tmpdir(), "intuitive_care");
 
 async function main() {
     // Ler variavels no arquivo .env
@@ -16,6 +18,7 @@ async function main() {
     await download_files_from_ftp();
     extration_from_zip();
     encode_conversion();
+    copy_files_to_tmp();
     await fill_database_with_data();
 }
 
@@ -50,7 +53,7 @@ function extration_from_zip() {
         if(file_path.endsWith(".zip")) {
             const zip = new admzip(file_path);
             zip.extractAllTo(download_dir, true);
-            fs.rm(file_path, e => e ? console.error(e) : {});
+            fs.rmSync(file_path);
         }
     });
 }
@@ -66,21 +69,35 @@ function encode_conversion() {
             const file_path = Path.resolve(download_dir, f);
             const encode = chardet.detectFileSync(file_path);
             if(encode) {
-                const stream = fs.createReadStream(file_path)
+                fs.createReadStream(file_path)
                     .pipe(iconv.decodeStream(encode.toString()))
                     .pipe(iconv.encodeStream('utf8'))
-                    .pipe(fs.createWriteStream(file_path + ".tmp"));
-                stream.on("finish", () => {
-                    fs.renameSync(file_path + ".tmp", file_path);
-                    console.log("Re-encoding do arquivo ", f, " para utf8 foi concluido!");
-                });
+                    .pipe(fs.createWriteStream(file_path + ".tmp"))
+                    .on("finish", () => {
+                        fs.renameSync(file_path + ".tmp", file_path);
+                    });
+
             }
         }
     });
 }
 
+function copy_files_to_tmp() {
+    const files_csv = fs.readdirSync(download_dir);
+
+    for(let i = 0; i < files_csv.length; i++) {
+        const f = files_csv[i];
+        if(f.endsWith(".csv")) {
+            const file_path = Path.resolve(download_dir, f);
+            const dest_path = Path.resolve(temp_dir, f);
+            fs.copyFileSync(file_path, dest_path);
+            fs.chmodSync(dest_path, "777");
+        }
+    }
+}
+
 async function fill_database_with_data() {
-    console.log("Conectando ao banco postgresql para criação e preenchimento das tabelas!");
+    console.log("Conectando ao banco postgresql para criação e preenchimento da tabela!");
 
     const client = new ClientPG({
         connectionString: process.env.DATABASE_URL
@@ -88,10 +105,34 @@ async function fill_database_with_data() {
 
     await client.connect();
 
+    let result = await client.query(`
+        CREATE TABLE IF NOT EXISTS demonstracoes_contabeis (
+            data DATE,
+            reg_ans VARCHAR,
+            cd_conta_contabil VARCHAR,
+            descricao VARCHAR,
+            vl_saldo_final VARCHAR
+        );
+    `);
 
+    const files_csv = fs.readdirSync(temp_dir);
+
+    for(let i = 0; i < files_csv.length; i++) {
+        const f = files_csv[i];
+        if(f.endsWith(".csv")) {
+            const file_path = Path.resolve(temp_dir, f);
+            result = await client.query(`
+                COPY demonstracoes_contabeis(data, reg_ans, cd_conta_contabil, descricao, vl_saldo_final)
+                FROM '${file_path}'
+                DELIMITER ';'
+                CSV HEADER;
+            `);
+
+            console.log(result);
+        }
+    }
 
     await client.end();
-
 }
 
 main();
