@@ -10,7 +10,10 @@ Para rodar basta entrar na pasta e rodar um `npm install` e `npm start`,
 e na pasta static você deve encontrar o pdf baixado, cada csv obtido do pdf, e o zip gerado com meu nome.
 
 ### Teste III
-Esse teste está localizado na pasta "Banco de dados"
+Esse teste está localizado na pasta "Banco de dados", para rodar a fase de preparação,
+basta entrar na pasta `preparation` e rodar um `npm install` e `npm start`.
+
+Tambem é necessario editar a string de conexão com o postgres no arguivo `.env` presente na pasta.
 
 Esse teste eu tentei resolver primeiramente criando um outro projeto nodejs com typescript que
 iria cuidar da parte de preparação (baixar todos os csvs necessarios), alem de converter o
